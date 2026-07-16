@@ -1,0 +1,282 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  background: #0b1018;
+  color: #e8eef8;
+}
+
+#renderCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud-arrive {
+  position: absolute;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-0.4rem);
+  z-index: 5;
+  padding: 0.65rem 1.15rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  color: #e8eef8;
+  background: rgba(8, 12, 20, 0.78);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+  text-align: center;
+  max-width: min(90vw, 28rem);
+}
+
+.hud-arrive.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.hud-bar {
+  pointer-events: auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.9rem 1.25rem;
+  background: linear-gradient(180deg, rgba(8, 12, 20, 0.92), rgba(8, 12, 20, 0.55) 70%, transparent);
+}
+
+.hud-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-right: 0.5rem;
+}
+
+.hud-brand strong {
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.hud-brand span {
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+.hud-stats {
+  display: flex;
+  gap: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+
+.hud-stats b {
+  color: #7dd3fc;
+  font-weight: 600;
+}
+
+.hud-difficulties,
+.hud-cameras {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.hud-difficulties button,
+.hud-cameras button,
+.hud-restart {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.hud-difficulties button:hover,
+.hud-cameras button:hover,
+.hud-restart:hover {
+  background: rgba(125, 211, 252, 0.16);
+  border-color: rgba(125, 211, 252, 0.35);
+}
+
+.hud-difficulties button.is-active,
+.hud-cameras button.is-active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.55);
+}
+
+.hud-status {
+  margin-left: auto;
+  font-size: 0.9rem;
+  min-height: 1.25rem;
+}
+
+.hud-status.is-won {
+  color: #4ade80;
+}
+
+.hud-status.is-lost {
+  color: #fb7185;
+}
+
+.hud-help {
+  pointer-events: none;
+  position: absolute;
+  left: 1.25rem;
+  bottom: 1.1rem;
+  font-size: 0.8rem;
+  opacity: 0.55;
+  max-width: 28rem;
+  line-height: 1.4;
+}
+
+.hud-end {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.hud-end.is-visible {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.hud-end-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(8, 14, 24, 0.55) 0%,
+    rgba(4, 8, 14, 0.82) 70%
+  );
+}
+
+.hud-end-panel {
+  position: relative;
+  width: min(22rem, 100%);
+  padding: 1.75rem 1.5rem 1.4rem;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 18, 28, 0.92);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  transform: translateY(10px) scale(0.97);
+  transition: transform 0.28s ease;
+}
+
+.hud-end.is-visible .hud-end-panel {
+  transform: translateY(0) scale(1);
+}
+
+.hud-end-title {
+  margin: 0 0 0.55rem;
+  font-size: 1.65rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.hud-end.is-won .hud-end-title {
+  color: #4ade80;
+}
+
+.hud-end.is-lost .hud-end-title {
+  color: #fb7185;
+}
+
+.hud-end-sub {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  opacity: 0.78;
+}
+
+.hud-end-retry {
+  display: block;
+  width: 100%;
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  background: rgba(56, 189, 248, 0.18);
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.hud-end-retry:hover {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: rgba(125, 211, 252, 0.55);
+}
+
+.hud-end.is-won .hud-end-retry {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.16);
+}
+
+.hud-end.is-won .hud-end-retry:hover {
+  background: rgba(74, 222, 128, 0.26);
+  border-color: rgba(74, 222, 128, 0.55);
+}
+
+.hud-end.is-lost .hud-end-retry {
+  border-color: rgba(251, 113, 133, 0.4);
+  background: rgba(251, 113, 133, 0.14);
+}
+
+.hud-end.is-lost .hud-end-retry:hover {
+  background: rgba(251, 113, 133, 0.24);
+  border-color: rgba(251, 113, 133, 0.55);
+}
+
+.hud-end-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 720px) {
+  .hud-status {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .hud-end-panel {
+    padding: 1.5rem 1.15rem 1.25rem;
+  }
+
+  .hud-end-title {
+    font-size: 1.4rem;
+  }
+}
