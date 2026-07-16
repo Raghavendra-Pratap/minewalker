@@ -26,7 +26,7 @@ import {
   boardCenter,
   cellToWorld,
 } from './world'
-import { tuneLitMaterial } from './lighting'
+import { tuneLitMaterial, HEADLAMP_LOOK_DOWN } from './lighting'
 
 /** Deterministic [0, 1) for per-tile stone variation. */
 function hash01(n: number) {
@@ -69,7 +69,7 @@ const FP_LOOK_SENS = 0.0038
 const FP_PITCH_MIN = -0.95
 const FP_PITCH_MAX = 0.72
 /** Slight default look-down so floor numbers stay in frame. */
-const FP_DEFAULT_PITCH = 0.14
+const FP_DEFAULT_PITCH = HEADLAMP_LOOK_DOWN
 const FP_EYE_HEIGHT = 1.08
 const FP_EYE_FORWARD = 0.12
 /** Wider than Babylon’s default (~0.8) so more of the shaft/field is in view. */
@@ -459,9 +459,11 @@ export class BoardView {
       this.chaseYawOffset = 0
       this.chasePitchOffset = 0
       this.snapChaseCamera()
+      this.playerView.aimLampWithBody()
     } else if (mode === 'third') {
       this.scene.activeCamera = this.thirdPerson
       this.snapThirdPerson()
+      this.playerView.aimLampWithBody()
     } else {
       this.scene.activeCamera = this.camera
       this.camera.radius = this.orbitRadius
@@ -874,6 +876,7 @@ export class BoardView {
     const crateMat = this.coveredMat.clone(`oreMat_${row}_${col}`)
     crateMat.diffuseTexture = this.coveredMat.diffuseTexture
     crateMat.backFaceCulling = true
+    tuneLitMaterial(crateMat)
     const tone = hash01(seed + 8)
     if (tone < 0.34) {
       crateMat.diffuseColor = new Color3(0.12 + hash01(seed + 9) * 0.06, 0.11, 0.1)
@@ -882,7 +885,7 @@ export class BoardView {
     } else {
       crateMat.diffuseColor = new Color3(0.1, 0.1, 0.11 + hash01(seed + 9) * 0.05)
     }
-    crateMat.emissiveColor = new Color3(0.03, 0.028, 0.025)
+    crateMat.emissiveColor = new Color3(0.012, 0.011, 0.01)
     stone.material = crateMat
     stone.isVisible = true
     stone.setEnabled(true)
@@ -981,7 +984,7 @@ export class BoardView {
     this.coveredMat = new StandardMaterial('coveredOre', this.scene)
     this.coveredMat.diffuseColor = new Color3(0.14, 0.13, 0.12)
     this.coveredMat.specularColor = new Color3(0.04, 0.04, 0.04)
-    this.coveredMat.emissiveColor = new Color3(0.03, 0.028, 0.025)
+    this.coveredMat.emissiveColor = new Color3(0.012, 0.011, 0.01)
     tuneLitMaterial(this.coveredMat)
     const stoneTex = this.makeStoneTexture('coveredStoneTex', 0.14, 0.13, 0.12)
     stoneTex.hasAlpha = false
@@ -1245,6 +1248,8 @@ export class BoardView {
       this.updateFirstPerson()
       return
     }
+
+    this.playerView.aimLampWithBody()
 
     if (this.cameraMode === 'chase') {
       this.updateChaseCamera()

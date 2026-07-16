@@ -208,6 +208,36 @@ export function openSafePad(
   return next
 }
 
+/**
+ * Fixed 5×5 training yard — three charges, open courtyard in the center.
+ * Same layout every run so first-time diggers can learn movement + numbers.
+ */
+export function createTrainingBoard(): Board {
+  const board = createBoard(5, 5)
+  const mines: Array<[number, number]> = [
+    [0, 0],
+    [0, 4],
+    [4, 2],
+  ]
+  for (const [row, col] of mines) {
+    board.cells[row][col].isMine = true
+  }
+  recomputeAdjacents(board)
+  recountMines(board)
+  board.generated = true
+
+  const spawnRow = 2
+  const spawnCol = 2
+  for (let r = spawnRow - 1; r <= spawnRow + 1; r++) {
+    for (let c = spawnCol - 1; c <= spawnCol + 1; c++) {
+      const cell = board.cells[r][c]
+      if (cell.isMine) continue
+      cell.status = 'revealed'
+    }
+  }
+  return board
+}
+
 export function revealCell(
   board: Board,
   row: number,

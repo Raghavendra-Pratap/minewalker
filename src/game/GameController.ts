@@ -2,6 +2,7 @@ import {
   countCleared,
   countFlags,
   createBoard,
+  createTrainingBoard,
   expandBoard,
   isWalkable,
   needsExpand,
@@ -270,6 +271,7 @@ export class GameController {
   }
 
   private createModeBoard(): Board {
+    if (this.modeId === 'training') return createTrainingBoard()
     const mode = GAME_MODES[this.modeId]
     return createBoard(mode.startRows, mode.startCols)
   }
@@ -287,6 +289,11 @@ export class GameController {
 
   /** Carve a tight safe pad around spawn so stone rock stays close and readable. */
   private openSpawnSanctuary() {
+    if (this.modeId === 'training') {
+      /* Training board already opens the courtyard and places fixed charges. */
+      this.status = 'ready'
+      return
+    }
     this.board = openSafePad(
       this.board,
       this.player.row,

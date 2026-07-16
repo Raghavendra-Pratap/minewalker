@@ -4,6 +4,19 @@ Bomberman-style **3D Minesweeper**: walk a miner through diggable rock. Classic 
 
 Built with **Vite**, **TypeScript**, and **Babylon.js** (no React / Three.js).
 
+## Campaign shell (like Signal Break)
+
+The app opens on a **Minewalker** cover → **Shift Desk** hub (levels) → play. Parallel to Signal Break’s cover → Field Ops → disciplines.
+
+| Screen | Role |
+| --- | --- |
+| Cover | Stamp, title, four-level brief, enter / how-to |
+| Shift Desk | Training yard + Beginner / Intermediate / Expert / Endless |
+| How to Play | Controls, mine logic, cameras, tradeoffs |
+| Play | 3D mine + HUD (`← Desk` returns to hub) |
+
+Skip the cover with `?play=1` or `?from=castle-gate` (Castle Gate handoff).
+
 ## Quick start
 
 ```bash
@@ -21,7 +34,7 @@ Default port: `5174`.
 
 ## How to play
 
-You start in a small open courtyard. Covered cells are **solid rock** — dig them open to walk further.
+You start in a small open courtyard. Covered cells are **solid rock** — dig them open to walk further. Pick a level from **Shift Desk**; the HUD shows the selected level only.
 
 | Mode | Board | Mines | Layout |
 | --- | --- | --- | --- |
@@ -51,13 +64,17 @@ Classic modes: clear every safe stone to win. Endless: dig the fringe to expand 
 
 **Head** cam sits over the miner, follows their facing, and can be angled with mouse drag. **3rd** is a free drone — on Beginner / Intermediate / Expert it stays parked where you leave it after scouting.
 
-Hit a charge while digging and the run ends. Use the HUD difficulty buttons to switch modes (starts a new run).
+Hit a charge while digging and the run ends. Press **R** or use the end-screen retry to restart; **← Desk** returns to Shift Desk.
 
 ## Architecture
 
 ```
 src/
   main.ts
+  campaign/
+    CampaignShell.ts   Cover → Shift Desk → guide
+    assignments.ts     Mode blurbs for hub cards
+    minewalker.css     Shift-log theme
   game/
     types.ts           Grid, player, Beginner/Intermediate/Expert/Endless
     board.ts           Pure minesweeper rules + expand
@@ -78,5 +95,5 @@ Logic stays Babylon-free in `board.ts`. The scene only mirrors state.
 ## Stack
 
 - `@babylonjs/core` — scene, shadows, materials, cameras
-- HTML HUD overlay for cleared / marks / time
+- HTML campaign shell + HUD overlay
 - Free drone (3rd), first-person, and orbit cameras

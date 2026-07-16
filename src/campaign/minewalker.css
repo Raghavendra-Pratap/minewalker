@@ -1,0 +1,422 @@
+/* Minewalker campaign — shift log / mine dossier (parallel to Signal Break field manual) */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.mw-screen {
+  --mw-bg: #080a0d;
+  --mw-panel: #12161c;
+  --mw-panel-raised: #1a2028;
+  --mw-line: #c4cdd8;
+  --mw-muted: #6f7d8c;
+  --mw-lamp: #e8a045;
+  --mw-vest: #e85d04;
+  --mw-chalk: #9eb4c8;
+  --mw-good: #5cb87a;
+  --mw-bad: #e05a5a;
+
+  box-sizing: border-box;
+  min-height: 100%;
+  width: 100%;
+  padding: 24px 16px 64px;
+  color: var(--mw-line);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  background-color: var(--mw-bg);
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% -10%, rgba(232, 160, 69, 0.07), transparent 55%),
+    linear-gradient(rgba(196, 205, 216, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196, 205, 216, 0.025) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    32px 32px,
+    32px 32px;
+  overflow-y: auto;
+}
+
+.mw-screen h1,
+.mw-screen h2,
+.mw-screen h3 {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  margin: 0;
+}
+
+.mw-screen button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mw-screen button:focus-visible {
+  outline: 2px solid var(--mw-lamp);
+  outline-offset: 2px;
+}
+
+.mw-shell {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ---------- Cover ---------- */
+.mw-cover {
+  text-align: center;
+  padding: 56px 12px 24px;
+}
+
+.mw-stamp {
+  display: inline-block;
+  border: 1px solid var(--mw-lamp);
+  color: var(--mw-lamp);
+  padding: 4px 12px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  transform: rotate(-1.5deg);
+  margin-bottom: 20px;
+}
+
+.mw-title {
+  font-size: clamp(40px, 8vw, 68px);
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  font-weight: 700;
+  color: var(--mw-line);
+}
+
+.mw-title span {
+  color: var(--mw-lamp);
+}
+
+.mw-sub {
+  color: var(--mw-muted);
+  font-size: 14px;
+  max-width: 540px;
+  margin: 18px auto 0;
+  line-height: 1.65;
+}
+
+.mw-brief {
+  text-align: left;
+  max-width: 580px;
+  margin: 36px auto 0;
+  background: var(--mw-panel);
+  border: 1px solid rgba(196, 205, 216, 0.12);
+  border-left: 3px solid var(--mw-vest);
+  padding: 22px 24px;
+  border-radius: 2px;
+}
+
+.mw-brief h3 {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mw-lamp);
+  margin-bottom: 12px;
+}
+
+.mw-brief ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--mw-line);
+}
+
+.mw-brief b {
+  color: var(--mw-lamp);
+}
+
+.mw-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.mw-cta {
+  background: var(--mw-lamp);
+  color: var(--mw-bg);
+  border: none;
+  padding: 14px 28px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-radius: 2px;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+
+.mw-cta:hover {
+  background: #f0b85a;
+  transform: translateY(-1px);
+}
+
+.mw-cta--ghost {
+  background: transparent;
+  color: var(--mw-line);
+  border: 1px solid rgba(196, 205, 216, 0.28);
+}
+
+.mw-cta--ghost:hover {
+  border-color: var(--mw-lamp);
+  color: var(--mw-lamp);
+  background: transparent;
+}
+
+.mw-footnote {
+  margin-top: 18px;
+  font-size: 11px;
+  color: var(--mw-muted);
+  letter-spacing: 0.06em;
+}
+
+/* ---------- Hub (Shift Desk) ---------- */
+.mw-hub {
+  padding-top: 12px;
+}
+
+.mw-back-link {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--mw-muted);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+  margin: 0 0 28px;
+}
+
+.mw-back-link:hover {
+  color: var(--mw-lamp);
+}
+
+.mw-map-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.mw-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mw-muted);
+  margin-bottom: 6px;
+}
+
+.mw-map-head h2 {
+  font-size: 28px;
+  color: var(--mw-line);
+}
+
+.mw-rule {
+  border: none;
+  border-top: 1px solid rgba(196, 205, 216, 0.14);
+  margin: 18px 0;
+}
+
+.mw-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.mw-hub-card {
+  text-align: left;
+  background: var(--mw-panel);
+  border: 1px solid rgba(196, 205, 216, 0.12);
+  border-radius: 2px;
+  padding: 18px;
+  color: var(--mw-line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition:
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.mw-hub-card:hover {
+  border-color: var(--mw-lamp);
+  transform: translateY(-1px);
+}
+
+.mw-hub-card--endless {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+  .mw-hub-card--endless {
+    grid-column: span 2;
+  }
+}
+
+.mw-hub-card--training {
+  border-color: rgba(92, 184, 122, 0.35);
+}
+
+.mw-hub-card--deep {
+  border-color: rgba(158, 180, 200, 0.22);
+}
+
+.mw-hub-card--master {
+  border-color: rgba(232, 93, 4, 0.28);
+}
+
+.mw-hub-card--tunnel {
+  border-color: rgba(92, 184, 122, 0.25);
+}
+
+.mw-badge {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mw-muted);
+  font-weight: 600;
+}
+
+.mw-hub-card h3 {
+  font-size: 20px;
+  color: var(--mw-line);
+}
+
+.mw-hub-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--mw-muted);
+  flex: 1;
+}
+
+.mw-hub-card__spec {
+  font-size: 11px;
+  color: rgba(196, 205, 216, 0.45);
+  letter-spacing: 0.04em;
+}
+
+.mw-hub-card__score {
+  font-size: 11px;
+  color: var(--mw-lamp);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.mw-hub-card__cta {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mw-lamp);
+  font-weight: 700;
+}
+
+/* ---------- Guide ---------- */
+.mw-guide {
+  padding: 28px 12px 48px;
+  max-width: 640px;
+}
+
+.mw-guide-title {
+  font-size: clamp(28px, 5vw, 42px);
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+  font-weight: 700;
+  color: var(--mw-line);
+  margin: 8px 0 16px;
+}
+
+.mw-guide-title span {
+  color: var(--mw-lamp);
+}
+
+.mw-guide-lede {
+  color: var(--mw-muted);
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.mw-guide-section {
+  margin: 28px 0;
+}
+
+.mw-guide-section h2 {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mw-lamp);
+  margin-bottom: 12px;
+}
+
+.mw-guide-section p,
+.mw-guide-section li {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--mw-line);
+}
+
+.mw-guide-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.mw-guide-section li {
+  margin-bottom: 8px;
+}
+
+.mw-guide-section b {
+  color: var(--mw-lamp);
+}
+
+.mw-guide-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.mw-guide-table > div {
+  background: var(--mw-panel);
+  border: 1px solid rgba(196, 205, 216, 0.12);
+  padding: 12px 14px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mw-guide-table b {
+  color: var(--mw-lamp);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mw-guide-table span {
+  font-size: 12px;
+  color: var(--mw-muted);
+}
+
+.mw-guide-footer {
+  text-align: center;
+  padding-top: 8px;
+}
+
+@media (max-width: 520px) {
+  .mw-guide-table {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mw-cta,
+  .mw-hub-card {
+    transition: none;
+  }
+}

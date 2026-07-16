@@ -1131,8 +1131,8 @@ export class CaveEnvironment {
       )
       light.diffuse = new Color3(1, 0.62, 0.28)
       light.specular = new Color3(0.4, 0.2, 0.05)
-      light.intensity = i < 8 ? 0.95 : 0.7
-      light.range = i < 8 ? 14 : 16
+      light.intensity = i < 8 ? 0.62 : 0.48
+      light.range = i < 8 ? 11 : 13
       this.torchLights.push(light)
     })
   }

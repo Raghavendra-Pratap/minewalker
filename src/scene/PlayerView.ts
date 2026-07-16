@@ -1,6 +1,6 @@
 import { Animation } from '@babylonjs/core/Animations/animation'
 import '@babylonjs/core/Animations/animatable'
-import { Color3, Vector3 } from '@babylonjs/core/Maths/math'
+import { Vector3 } from '@babylonjs/core/Maths/math'
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder'
 import { Mesh } from '@babylonjs/core/Meshes/mesh'
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode'
@@ -20,6 +20,14 @@ if (!SceneLoader.IsPluginForExtensionAvailable('.glb')) {
   RegisterSceneLoaderPlugin(new GLTFFileLoader())
 }
 import { DIRECTION_YAW, type PlayerState } from '../game/types'
+import {
+  HEADLAMP_BEAM_ANGLE,
+  HEADLAMP_BEAM_EXPONENT,
+  HEADLAMP_BEAM_INTENSITY,
+  HEADLAMP_FILL_INTENSITY,
+  HEADLAMP_LOOK_DOWN,
+  tuneHeadlampLights,
+} from './lighting'
 import { FLOOR_Y, cellToWorld } from './world'
 import { smoothWorkerMeshes } from './smoothWorker'
 import {
@@ -29,11 +37,6 @@ import {
   pickSkinMesh,
   type MinewalkerGearKit,
 } from './minewalkerGear'
-
-const LAMP_INTENSITY = 2.4
-const LAMP_RANGE = 16
-const SPOT_INTENSITY = 3.0
-const SPOT_RANGE = 14
 
 /** Slightly smaller than full Quaternius height so the miner fits tile scale. */
 const HERO_SCALE = 0.75
@@ -63,6 +66,7 @@ export class PlayerView {
   /** Movable body root (GLB or placeholder). Bob / blast animate this. */
   private body: TransformNode
   private modelRoot: TransformNode | null = null
+  private lampRig: TransformNode
   private lampLight: PointLight
   private spotLight: SpotLight
   private worldX = 0
@@ -99,24 +103,25 @@ export class PlayerView {
     stub.isVisible = false
     stub.isPickable = false
 
-    this.lampLight = new PointLight('minerLamp', new Vector3(0, 1.2, 0), scene)
-    this.lampLight.diffuse = new Color3(1, 0.82, 0.5)
-    this.lampLight.specular = new Color3(0.4, 0.25, 0.1)
-    this.lampLight.intensity = LAMP_INTENSITY
-    this.lampLight.range = LAMP_RANGE
+    this.lampRig = new TransformNode('lampRig', scene)
+    this.lampRig.parent = this.root
+    this.lampRig.position.y = LAMP_Y
+
+    const brimForward = 0.34 * HERO_SCALE
+    this.lampLight = new PointLight('minerLamp', new Vector3(0, 0, brimForward), scene)
+    this.lampLight.parent = this.lampRig
 
     this.spotLight = new SpotLight(
       'minerSpot',
-      new Vector3(0, 1.15, 0),
-      new Vector3(0, -0.12, 1),
-      Math.PI / 2.6,
-      28,
+      new Vector3(0, 0, brimForward * 0.88),
+      new Vector3(0, -0.15, 1),
+      HEADLAMP_BEAM_ANGLE,
+      HEADLAMP_BEAM_EXPONENT,
       scene,
     )
-    this.spotLight.diffuse = new Color3(1, 0.88, 0.55)
-    this.spotLight.specular = new Color3(0.35, 0.25, 0.1)
-    this.spotLight.intensity = SPOT_INTENSITY
-    this.spotLight.range = SPOT_RANGE
+    this.spotLight.parent = this.lampRig
+    tuneHeadlampLights(this.lampLight, this.spotLight)
+    this.syncLampPose()
 
     scene.onBeforeRenderObservable.add(() => this.tick())
     void this.loadStudioHero()
@@ -299,10 +304,7 @@ export class PlayerView {
   }
 
   private restoreLamps() {
-    this.lampLight.intensity = LAMP_INTENSITY
-    this.lampLight.range = LAMP_RANGE
-    this.spotLight.intensity = SPOT_INTENSITY
-    this.spotLight.range = SPOT_RANGE
+    tuneHeadlampLights(this.lampLight, this.spotLight)
   }
 
   private applyVisibility() {
@@ -313,26 +315,33 @@ export class PlayerView {
     this.spotLight.setEnabled(lampsOn)
   }
 
+  /** Body-facing lamp (chase / third / orbit). */
+  aimLampWithBody() {
+    this.syncLampPose()
+    this.updateSpotDirectionFromRig()
+  }
+
   private syncLampPose() {
-    const fx = Math.sin(this.currentYaw)
-    const fz = Math.cos(this.currentYaw)
-    const eyeY = LAMP_Y
-    /* Sit ahead of the brim so the point light doesn’t sit inside the skull. */
-    this.lampLight.position.set(this.worldX + fx * 0.35 * HERO_SCALE, eyeY, this.worldZ + fz * 0.35 * HERO_SCALE)
-    this.spotLight.position.set(this.worldX + fx * 0.28 * HERO_SCALE, eyeY, this.worldZ + fz * 0.28 * HERO_SCALE)
-    this.spotLight.direction.set(fx, -0.12, fz)
+    this.lampRig.rotation.y = 0
+    this.lampRig.rotation.x = HEADLAMP_LOOK_DOWN
+  }
+
+  /** Spot direction is world-space in Babylon — must follow the lamp rig each frame. */
+  private updateSpotDirectionFromRig() {
+    this.lampRig.computeWorldMatrix(true)
+    // Babylon's "forward" differs by coordinate conventions; use -Z so the beam
+    // actually projects out of the lamp lens.
+    this.spotLight.direction.copyFrom(this.lampRig.getDirection(new Vector3(0, 0, -1)))
   }
 
   /** Aim the helmet lamp with camera look (first-person). */
   aimHeadlamp(yaw: number, pitch = 0) {
-    const cosP = Math.cos(pitch)
-    const fx = Math.sin(yaw) * cosP
-    const fy = -Math.sin(pitch)
-    const fz = Math.cos(yaw) * cosP
-    const eyeY = LAMP_Y
-    this.lampLight.position.set(this.worldX + fx * 0.32 * HERO_SCALE, eyeY, this.worldZ + fz * 0.32 * HERO_SCALE)
-    this.spotLight.position.set(this.worldX + fx * 0.24 * HERO_SCALE, eyeY, this.worldZ + fz * 0.24 * HERO_SCALE)
-    this.spotLight.direction.set(fx, fy, fz)
+    let dyaw = yaw - this.currentYaw
+    while (dyaw > Math.PI) dyaw -= Math.PI * 2
+    while (dyaw < -Math.PI) dyaw += Math.PI * 2
+    this.lampRig.rotation.y = dyaw
+    this.lampRig.rotation.x = pitch
+    this.updateSpotDirectionFromRig()
   }
 
   private tick() {
@@ -351,7 +360,7 @@ export class PlayerView {
 
     this.root.position.set(this.worldX, FLOOR_Y, this.worldZ)
     this.root.rotation.y = this.currentYaw
-    if (this.bodyVisible) this.syncLampPose()
+    this.updateSpotDirectionFromRig()
 
     if (this.blasting) return
 
@@ -423,8 +432,8 @@ export class PlayerView {
       this.targetZ = this.worldZ + (dz / len) * 0.55
     }
 
-    this.lampLight.intensity = 5.5
-    this.spotLight.intensity = 6
+    this.lampLight.intensity = HEADLAMP_FILL_INTENSITY * 2.4
+    this.spotLight.intensity = HEADLAMP_BEAM_INTENSITY * 2.4
     this.lampLight.setEnabled(true)
     this.spotLight.setEnabled(true)
     this.scene.beginAnimation(this.body, 0, 18, false, 1, () => {

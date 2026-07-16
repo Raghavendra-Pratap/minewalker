@@ -172,9 +172,9 @@ export function createMinewalkerGear(scene: Scene): MinewalkerGearKit {
     power: 12,
   })
   const lampMat = mat(scene, 'mwLampLens', new Color3(1, 0.96, 0.82), {
-    emissive: new Color3(1, 0.75, 0.25),
-    specular: new Color3(1, 1, 1),
-    power: 90,
+    emissive: new Color3(0.82, 0.58, 0.18),
+    specular: new Color3(0.35, 0.32, 0.28),
+    power: 42,
   })
   const oreMat = mat(scene, 'mwOre', new Color3(0.35, 0.42, 0.47), {
     specular: new Color3(0.2, 0.27, 0.33),

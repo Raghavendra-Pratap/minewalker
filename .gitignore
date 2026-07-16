@@ -2,3 +2,9 @@ node_modules
 dist
 .DS_Store
 *.local
+
+# Agent workflow rules (local only)
+.cursor/
+
+# Internal recovery / development docs — showcase lives in release-docs/
+docs/

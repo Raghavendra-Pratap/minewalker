@@ -1,0 +1,100 @@
+{
+  "schema": "raghav.it/journey/v1",
+  "meta": {
+    "authored_by": "agent",
+    "authored_at": "2026-07-16",
+    "source_repo": "https://github.com/Raghavendra-Pratap/minewalker"
+  },
+  "project": {
+    "id": "minesweeper_3d",
+    "name": "Minewalker",
+    "year": "2026",
+    "short": "3D Minesweeper — walk and dig through rock in Babylon.js.",
+    "desc": "Bomberman-style 3D Minesweeper: dig solid rock cells, clear Beginner through Expert boards, or walk an Endless tunnel. Campaign shell mirrors Signal Break (cover → Shift Desk → play).",
+    "status": "live",
+    "url": "",
+    "repo": "https://github.com/Raghavendra-Pratap/minewalker",
+    "icon": "",
+    "hue": "amber"
+  },
+  "parent_milestone_id": "now",
+  "skills": [
+    {
+      "id": "fe",
+      "name": "Frontend",
+      "existing": true
+    },
+    {
+      "id": "gamedev",
+      "name": "Game Design"
+    }
+  ],
+  "tech": [
+    {
+      "id": "babylon",
+      "name": "Babylon.js",
+      "icon": "si:babylondotjs"
+    },
+    {
+      "id": "ts",
+      "name": "TypeScript",
+      "icon": "si:typescript",
+      "existing": true
+    },
+    {
+      "id": "vite",
+      "name": "Vite",
+      "icon": "si:vite"
+    }
+  ],
+  "courses": [],
+  "incidents": [],
+  "learnings": [
+    {
+      "id": "campaign_shell",
+      "name": "Shared campaign shell",
+      "year": "2026",
+      "desc": "Cover → hub → play pattern transfers cleanly across games."
+    }
+  ],
+  "carried_forward": [
+    "fe",
+    "gamedev"
+  ],
+  "links": [
+    {
+      "from": "minesweeper_3d",
+      "to": "babylon"
+    },
+    {
+      "from": "minesweeper_3d",
+      "to": "ts"
+    },
+    {
+      "from": "minesweeper_3d",
+      "to": "vite"
+    },
+    {
+      "from": "minesweeper_3d",
+      "to": "fe"
+    },
+    {
+      "from": "minesweeper_3d",
+      "to": "gamedev"
+    }
+  ],
+  "core_events": [
+    {
+      "type": "project",
+      "year": "2026",
+      "name": "Minewalker",
+      "desc": "3D Minesweeper in Babylon.js."
+    },
+    {
+      "type": "learning",
+      "year": "2026",
+      "name": "Shared campaign shell",
+      "desc": "Cover → hub → play pattern across games."
+    }
+  ]
+}

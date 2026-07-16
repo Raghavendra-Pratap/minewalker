@@ -29,8 +29,8 @@ export const DIRECTION_YAW: Record<Direction, number> = {
 /** Open rectangular field (classic) vs eastward tunnel gallery (endless). */
 export type BoardLayout = 'plane' | 'tunnel'
 
-/** Classic difficulties + endless mine. */
-export type GameModeId = 'beginner' | 'intermediate' | 'expert' | 'endless'
+/** Classic difficulties + endless mine + training yard. */
+export type GameModeId = 'training' | 'beginner' | 'intermediate' | 'expert' | 'endless'
 
 export interface GameMode {
   id: GameModeId
@@ -46,8 +46,17 @@ export interface GameMode {
   expandMargin?: number
 }
 
-/** Original v1 presets from the project plan, plus endless tunnel. */
+/** Original v1 presets from the project plan, plus endless tunnel and training. */
 export const GAME_MODES: Record<GameModeId, GameMode> = {
+  training: {
+    id: 'training',
+    label: 'Training',
+    startRows: 5,
+    startCols: 5,
+    mines: 3,
+    layout: 'plane',
+    endless: false,
+  },
   beginner: {
     id: 'beginner',
     label: 'Beginner',

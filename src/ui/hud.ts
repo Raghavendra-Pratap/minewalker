@@ -1,6 +1,8 @@
 import type { GameController } from '../game/GameController'
+import { formatScoreTime, recordRun } from '../game/scores'
 import { GAME_MODES, type GameModeId, type GameSnapshot } from '../game/types'
 import type { CameraMode } from '../scene/BoardView'
+import { trainingTipsMarkup, updateTrainingLiveTip } from './trainingTips'
 import './hud.css'
 
 const LOSS_OVERLAY_DELAY_MS = 750
@@ -14,6 +16,11 @@ function formatTime(seconds: number) {
 function statusText(snapshot: GameSnapshot) {
   const mode = GAME_MODES[snapshot.mode]
   if (snapshot.status === 'lost' || snapshot.status === 'won') return ''
+  if (snapshot.mode === 'training') {
+    return snapshot.status === 'playing'
+      ? 'Walk to a wall · dig numbers · flag the three charges'
+      : 'Practice yard — dig safe rock, flag charges'
+  }
   if (snapshot.status === 'playing') {
     return mode.endless
       ? 'Keep digging the endless vein…'
@@ -26,6 +33,7 @@ function statusText(snapshot: GameSnapshot) {
 
 function brandSubtitle(modeId: GameModeId) {
   const mode = GAME_MODES[modeId]
+  if (modeId === 'training') return 'Training yard · 5×5 · 3 charges'
   if (mode.endless) return 'Endless mine · dig forever'
   return `${mode.label} · ${mode.startCols}×${mode.startRows} · ${mode.mines} mines`
 }
@@ -42,24 +50,16 @@ export function mountHud(
     onCameraMode?: (mode: CameraMode) => void
     initialCameraMode?: CameraMode
     fromCastleGate?: boolean
+    onBackToDesk?: () => void
   } = {},
 ): HudApi {
-  const modeButtons = (Object.keys(GAME_MODES) as GameModeId[])
-    .map(
-      (id) =>
-        `<button type="button" data-mode="${id}">${GAME_MODES[id].label}</button>`,
-    )
-    .join('')
-
   root.innerHTML = `
     <div class="hud-arrive" data-arrive hidden>You fell through the gallery…</div>
     <div class="hud-bar">
+      <button type="button" class="hud-desk" data-desk title="Return to Shift Desk">← Desk</button>
       <div class="hud-brand">
         <strong>Minewalker</strong>
         <span data-brand-sub>${brandSubtitle(game.getMode())}</span>
-      </div>
-      <div class="hud-difficulties" data-modes>
-        ${modeButtons}
       </div>
       <div class="hud-stats">
         <span>Cleared <b data-cleared>0</b></span>
@@ -72,19 +72,25 @@ export function mountHud(
         <button type="button" data-cam="first">1st</button>
         <button type="button" data-cam="orbit">Orbit</button>
       </div>
-      <button type="button" class="hud-restart" data-restart>New run</button>
       <div class="hud-status" data-status></div>
     </div>
+    ${trainingTipsMarkup()}
     <p class="hud-help">
       WASD move · Shift+WASD fly 3rd cam · T recall drone · Space dig · F flag · V camera · R restart
     </p>
     <div class="hud-end" data-end hidden aria-hidden="true">
       <div class="hud-end-veil"></div>
-      <div class="hud-end-panel" role="dialog" aria-labelledby="hud-end-title">
+      <div class="hud-end-panel" role="dialog" aria-labelledby="hud-end-title" aria-describedby="hud-end-sub">
+        <p class="hud-end-eyebrow" data-end-eyebrow></p>
         <h2 class="hud-end-title" id="hud-end-title" data-end-title></h2>
-        <p class="hud-end-sub" data-end-sub></p>
-        <button type="button" class="hud-end-retry" data-end-retry>Try again</button>
-        <p class="hud-end-hint">or press R</p>
+        <p class="hud-end-sub" id="hud-end-sub" data-end-sub></p>
+        <div class="hud-end-meta" data-end-meta hidden></div>
+        <p class="hud-end-best" data-end-best hidden></p>
+        <div class="hud-end-actions">
+          <button type="button" class="hud-end-retry" data-end-retry>Try again</button>
+          <button type="button" class="hud-end-desk" data-end-desk hidden>← Shift Desk</button>
+        </div>
+        <p class="hud-end-hint" data-end-hint>Press <kbd>R</kbd> to restart</p>
       </div>
     </div>
   `
@@ -101,18 +107,22 @@ export function mountHud(
     }, 3200)
   }
 
-  const modesEl = root.querySelector('[data-modes]') as HTMLElement
   const brandSubEl = root.querySelector('[data-brand-sub]') as HTMLElement
   const camerasEl = root.querySelector('[data-cameras]') as HTMLElement
   const clearedEl = root.querySelector('[data-cleared]') as HTMLElement
   const minesEl = root.querySelector('[data-mines]') as HTMLElement
   const timeEl = root.querySelector('[data-time]') as HTMLElement
   const statusEl = root.querySelector('[data-status]') as HTMLElement
-  const restartBtn = root.querySelector('[data-restart]') as HTMLButtonElement
+  const trainEl = root.querySelector('[data-train]') as HTMLElement
+  const deskBtn = root.querySelector('[data-desk]') as HTMLButtonElement
   const endEl = root.querySelector('[data-end]') as HTMLElement
+  const endEyebrowEl = root.querySelector('[data-end-eyebrow]') as HTMLElement
   const endTitleEl = root.querySelector('[data-end-title]') as HTMLElement
   const endSubEl = root.querySelector('[data-end-sub]') as HTMLElement
+  const endMetaEl = root.querySelector('[data-end-meta]') as HTMLElement
+  const endBestEl = root.querySelector('[data-end-best]') as HTMLElement
   const endRetryBtn = root.querySelector('[data-end-retry]') as HTMLButtonElement
+  const endDeskBtn = root.querySelector('[data-end-desk]') as HTMLButtonElement
 
   let lossShowTimer: number | null = null
   let overlayOutcome: 'won' | 'lost' | null = null
@@ -128,29 +138,141 @@ export function mountHud(
     clearLossTimer()
     overlayOutcome = null
     endEl.hidden = true
-    endEl.classList.remove('is-visible', 'is-won', 'is-lost')
+    endEl.classList.remove('is-visible', 'is-won', 'is-lost', 'is-record')
     endEl.setAttribute('aria-hidden', 'true')
+  }
+
+  const applyScoreLine = (snapshot: GameSnapshot, recorded: ReturnType<typeof recordRun>) => {
+    const { score, isNewBest } = recorded
+    endEl.classList.toggle('is-record', isNewBest)
+
+    if (snapshot.mode === 'endless') {
+      if (score.bestCleared == null) {
+        endBestEl.hidden = true
+        endBestEl.textContent = ''
+        return
+      }
+      endBestEl.hidden = false
+      endBestEl.textContent = isNewBest
+        ? `New best · ${score.bestCleared} cleared`
+        : `Best · ${score.bestCleared} cleared`
+      return
+    }
+
+    if (score.bestTimeSec == null) {
+      endBestEl.hidden = true
+      endBestEl.textContent = ''
+      return
+    }
+
+    endBestEl.hidden = false
+    if (isNewBest) {
+      endBestEl.textContent = `New best time · ${formatScoreTime(score.bestTimeSec)}`
+    } else {
+      endBestEl.textContent = `Best time · ${formatScoreTime(score.bestTimeSec)}`
+    }
   }
 
   const showEndOverlay = (kind: 'won' | 'lost', snapshot: GameSnapshot) => {
     const mode = GAME_MODES[snapshot.mode]
+    const training = snapshot.mode === 'training'
+    const endless = mode.endless
     overlayOutcome = kind
     endEl.classList.toggle('is-won', kind === 'won')
     endEl.classList.toggle('is-lost', kind === 'lost')
 
+    const recorded = recordRun({
+      mode: snapshot.mode,
+      elapsedSeconds: snapshot.elapsedSeconds,
+      cleared: snapshot.cleared,
+      won: kind === 'won',
+    })
+
     if (kind === 'won') {
-      endTitleEl.textContent = 'Vein cleared'
-      endSubEl.textContent = `${mode.label} · ${snapshot.cleared} stones · ${formatTime(snapshot.elapsedSeconds)}`
-      endRetryBtn.textContent = 'Play again'
-    } else {
+      if (training) {
+        endEyebrowEl.textContent = 'Training complete'
+        endTitleEl.textContent = 'Yard cleared'
+        endSubEl.textContent =
+          'You can dig, read numbers, and mark charges. Take a real cut from Shift Desk when you’re ready.'
+        endRetryBtn.textContent = 'Run the yard again'
+        endMetaEl.hidden = false
+        endMetaEl.innerHTML = `
+          <div><span>Time</span><b>${formatTime(snapshot.elapsedSeconds)}</b></div>
+          <div><span>Clears</span><b>${recorded.score.wins}</b></div>
+          <div><span>Yard</span><b>5×5</b></div>
+        `
+      } else if (endless) {
+        endEyebrowEl.textContent = 'Shift report'
+        endTitleEl.textContent = 'Still standing'
+        endSubEl.textContent =
+          'The tunnel keeps going — you cleared every safe stone in reach. Dig again, or clock out at the desk.'
+        endRetryBtn.textContent = 'Dig deeper'
+        endMetaEl.hidden = false
+        endMetaEl.innerHTML = `
+          <div><span>Cleared</span><b>${snapshot.cleared}</b></div>
+          <div><span>Time</span><b>${formatTime(snapshot.elapsedSeconds)}</b></div>
+          <div><span>Vein</span><b>${mode.label}</b></div>
+        `
+      } else {
+        endEyebrowEl.textContent = recorded.isNewBest ? 'New record' : 'Shift report'
+        endTitleEl.textContent = 'Vein cleared'
+        endSubEl.textContent =
+          'Every safe stone cut. No charges left unmarked. The gallery holds — for now.'
+        endRetryBtn.textContent = 'Another cut'
+        endMetaEl.hidden = false
+        endMetaEl.innerHTML = `
+          <div><span>Level</span><b>${mode.label}</b></div>
+          <div><span>Cleared</span><b>${snapshot.cleared}</b></div>
+          <div><span>Time</span><b>${formatTime(snapshot.elapsedSeconds)}</b></div>
+        `
+      }
+    } else if (training) {
+      endEyebrowEl.textContent = 'Training incident'
+      endTitleEl.textContent = 'Charge hit'
+      endSubEl.textContent =
+        'That face was charged. Read the number under your boots, flag suspects with F, dig only what the count allows.'
+      endRetryBtn.textContent = 'Reset yard'
+      endMetaEl.hidden = false
+      endMetaEl.innerHTML = `
+        <div><span>Tip</span><b>F</b> flags</div>
+        <div><span>Tip</span><b>Space</b> digs</div>
+        <div><span>Tip</span><b>Numbers</b> count</div>
+      `
+    } else if (endless) {
+      endEyebrowEl.textContent = recorded.isNewBest ? 'New record' : 'Incident report'
       endTitleEl.textContent = 'Charge detonated'
-      endSubEl.textContent = 'The blast got you — dig smarter next run.'
-      endRetryBtn.textContent = 'Try again'
+      endSubEl.textContent = recorded.isNewBest
+        ? `Deepest cut yet — ${snapshot.cleared} safe stones before the blast. The tunnel remembers.`
+        : 'The blast took the cut. Flag what the numbers force, dig only proven-safe rock, push the tunnel again.'
+      endRetryBtn.textContent = 'Re-enter the tunnel'
+      endMetaEl.hidden = false
+      endMetaEl.innerHTML = `
+        <div><span>Cleared</span><b>${snapshot.cleared}</b></div>
+        <div><span>Time</span><b>${formatTime(snapshot.elapsedSeconds)}</b></div>
+        <div><span>Vein</span><b>${mode.label}</b></div>
+      `
+    } else {
+      endEyebrowEl.textContent = 'Incident report'
+      endTitleEl.textContent = 'Charge detonated'
+      endSubEl.textContent =
+        'The blast took the cut. Flag what the numbers force, dig only proven-safe rock, try the vein again.'
+      endRetryBtn.textContent = 'Re-enter the cut'
+      endMetaEl.hidden = false
+      endMetaEl.innerHTML = `
+        <div><span>Level</span><b>${mode.label}</b></div>
+        <div><span>Cleared</span><b>${snapshot.cleared}</b></div>
+        <div><span>Time</span><b>${formatTime(snapshot.elapsedSeconds)}</b></div>
+      `
     }
+
+    applyScoreLine(snapshot, recorded)
+
+    const showDesk = Boolean(options.onBackToDesk)
+    endDeskBtn.hidden = !showDesk
+    endDeskBtn.textContent = training && kind === 'won' ? 'Open Shift Desk →' : '← Shift Desk'
 
     endEl.hidden = false
     endEl.setAttribute('aria-hidden', 'false')
-    // Next frame so CSS transition can run after display flips
     requestAnimationFrame(() => {
       endEl.classList.add('is-visible')
     })
@@ -158,15 +280,9 @@ export function mountHud(
 
   const restart = () => game.restart()
 
-  restartBtn.addEventListener('click', restart)
+  deskBtn.addEventListener('click', () => options.onBackToDesk?.())
+  endDeskBtn.addEventListener('click', () => options.onBackToDesk?.())
   endRetryBtn.addEventListener('click', restart)
-
-  modesEl.querySelectorAll('button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const mode = btn.getAttribute('data-mode') as GameModeId
-      game.setMode(mode)
-    })
-  })
 
   camerasEl.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -191,9 +307,10 @@ export function mountHud(
     statusEl.classList.toggle('is-lost', false)
     statusEl.classList.toggle('is-won', false)
     brandSubEl.textContent = brandSubtitle(snapshot.mode)
-    modesEl.querySelectorAll('button').forEach((btn) => {
-      btn.classList.toggle('is-active', btn.getAttribute('data-mode') === snapshot.mode)
-    })
+    const inTraining = snapshot.mode === 'training'
+    const ended = snapshot.status === 'won' || snapshot.status === 'lost'
+    trainEl.hidden = !inTraining || ended
+    if (inTraining && !ended) updateTrainingLiveTip(root, snapshot)
 
     if (snapshot.status === 'won') {
       clearLossTimer()
