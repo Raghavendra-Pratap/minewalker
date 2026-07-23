@@ -129,7 +129,9 @@ export class PlayerView {
 
   private async loadStudioHero() {
     try {
-      const result = await SceneLoader.ImportMeshAsync('', '/models/', 'Worker.glb', this.scene)
+      /* Resolve relative to the page (works at / and /games/minewalker/). */
+      const modelRoot = new URL('models/', document.baseURI).href
+      const result = await SceneLoader.ImportMeshAsync('', modelRoot, 'Worker.glb', this.scene)
       const meshes = result.meshes.filter((m) => m.name !== '__root__') as Mesh[]
       const rootNode = result.meshes[0]
       if (!rootNode) throw new Error('Worker.glb empty')

@@ -165,6 +165,8 @@ export class BoardView {
   private droneFollowOffset = DRONE_START_OFFSET.clone()
   private droneHeldKeys = new Set<string>()
   private chaseLookAt = new Vector3(0, 0.55, 0)
+  /** When false (mobile Simple mode), ignore drag-look on the canvas. */
+  private pointerLookEnabled = true
   /** Extra orbit angles on Head cam — mouse drag; base still follows facing. */
   private chaseYawOffset = 0
   private chasePitchOffset = 0
@@ -235,8 +237,20 @@ export class BoardView {
     })
   }
 
+  /** Mobile Simple mode disables canvas drag-look so thumbs don't yaw the cam. */
+  setPointerLookEnabled(enabled: boolean) {
+    this.pointerLookEnabled = enabled
+    if (!enabled) {
+      this.firstPersonDragging = false
+      this.chaseDragging = false
+      this.droneDragging = null
+    }
+  }
+
   private bindPointerLookControls() {
     const onPointerDown = (event: PointerEvent) => {
+      if (!this.pointerLookEnabled) return
+
       if (this.cameraMode === 'first') {
         if (event.button !== 0) return
         this.firstPersonDragging = true
@@ -468,7 +482,7 @@ export class BoardView {
       this.scene.activeCamera = this.camera
       this.camera.radius = this.orbitRadius
       this.camera.alpha = -Math.PI / 2
-      this.camera.beta = Math.min(Math.PI / 3.1, this.camera.upperBetaLimit)
+      this.camera.beta = Math.min(Math.PI / 3.1, this.camera.upperBetaLimit ?? Math.PI / 2)
       this.camera.setTarget(this.playerView.getWorldPosition())
       this.camera.attachControl(this.canvas, true)
       const pointers = this.camera.inputs.attached.pointers as { buttons?: number[] } | undefined
@@ -1272,11 +1286,13 @@ export class BoardView {
     current.z += (target.z - current.z) * blend
     this.camera.setTarget(current)
     // Hard clamp — prevents drag inertia from sitting below the playable view
-    if (this.camera.beta > this.camera.upperBetaLimit) {
-      this.camera.beta = this.camera.upperBetaLimit
+    const upper = this.camera.upperBetaLimit ?? Math.PI / 2
+    const lower = this.camera.lowerBetaLimit ?? 0.1
+    if (this.camera.beta > upper) {
+      this.camera.beta = upper
     }
-    if (this.camera.beta < this.camera.lowerBetaLimit) {
-      this.camera.beta = this.camera.lowerBetaLimit
+    if (this.camera.beta < lower) {
+      this.camera.beta = lower
     }
     this.orbitRadius = this.camera.radius
     this.orbitFill.position.set(current.x + 4, 9, current.z)

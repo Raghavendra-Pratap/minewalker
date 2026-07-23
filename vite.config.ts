@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  /* Relative asset + model URLs so the build works under /games/minewalker/. */
+  base: './',
   server: {
     port: 5174,
   },

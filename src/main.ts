@@ -5,6 +5,7 @@ import { BoardView } from './scene/BoardView'
 import { createScene } from './scene/createScene'
 import { mountCampaignShell } from './campaign/CampaignShell'
 import { mountHud } from './ui/hud'
+import { mountMobileControls } from './ui/mobileControls'
 import './ui/hud.css'
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement
@@ -42,6 +43,13 @@ const enterMine = (mode: GameModeId) => {
   hudRoot.hidden = false
   canvas.classList.add('is-play')
   game.setMode(mode)
+  mobile?.setVisible(true)
+  if (mobile?.mode() === 'simple') {
+    boardView.setCameraMode('chase')
+    boardView.setPointerLookEnabled(false)
+  } else if (mobile) {
+    boardView.setPointerLookEnabled(true)
+  }
   canvas.focus()
 }
 
@@ -49,6 +57,7 @@ const leaveMine = () => {
   inMine = false
   hudRoot.hidden = true
   canvas.classList.remove('is-play')
+  mobile?.setVisible(false)
   campaign.show()
   campaign.goHub()
 }
@@ -61,6 +70,15 @@ const hud = mountHud(hudRoot, game, {
   fromCastleGate,
   onBackToDesk: leaveMine,
 })
+
+const mobile = mountMobileControls(hudRoot, game, {
+  onModeChange: (touchMode) => {
+    boardView.setPointerLookEnabled(touchMode === 'immersive')
+    if (touchMode === 'simple') boardView.setCameraMode('chase')
+  },
+  onPreferSimpleCamera: () => boardView.setCameraMode('chase'),
+})
+mobile?.setVisible(false)
 
 boardView.onCameraModeChange((mode) => hud.setCameraMode(mode))
 
