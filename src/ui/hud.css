@@ -10,7 +10,10 @@ body,
   margin: 0;
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
   font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   background: #0b1018;
   color: #e8eef8;

@@ -6,6 +6,7 @@ import { createScene } from './scene/createScene'
 import { mountCampaignShell } from './campaign/CampaignShell'
 import { mountHud } from './ui/hud'
 import { mountMobileControls } from './ui/mobileControls'
+import { installLandscapeGate, preferLandscapeFromGesture } from './ui/landscapeGate'
 import './ui/hud.css'
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement
@@ -18,6 +19,7 @@ if (!canvas || !hudRoot || !campaignRoot) {
 
 canvas.addEventListener('contextmenu', (event) => event.preventDefault())
 canvas.tabIndex = 0
+installLandscapeGate()
 
 const { scene, camera, shadowGenerator, hemi, shaft } = createScene(canvas)
 const game = new GameController()
@@ -43,6 +45,7 @@ const enterMine = (mode: GameModeId) => {
   hudRoot.hidden = false
   canvas.classList.add('is-play')
   game.setMode(mode)
+  void preferLandscapeFromGesture()
   mobile?.setVisible(true)
   if (mobile?.mode() === 'simple') {
     boardView.setCameraMode('chase')

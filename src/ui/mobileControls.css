@@ -179,6 +179,11 @@ body.has-touch-play .hud-help {
   display: none;
 }
 
+body.needs-landscape .mw-mobile {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 body.has-touch-play .hud-bar {
   padding-bottom: 0.55rem;
 }
